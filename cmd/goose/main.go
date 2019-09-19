@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+
 	"os"
 
 	"github.com/pressly/goose"

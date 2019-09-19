@@ -7,19 +7,9 @@ import (
 	"path/filepath"
 	"text/template"
 	"time"
-<<<<<<< HEAD
-)
-
-// Create writes a new blank migration file.
-func Create(db *sql.DB, dir, name, migrationType string) error {
-	t := time.Now()
-	version := t.Format("20060102150405")
-	filename := fmt.Sprintf("%v_%v.%v", version, name, migrationType)
-=======
 
 	"github.com/pkg/errors"
 )
->>>>>>> e42e49944b10e9e747aaec4b8e2ec31ea74dfa57
 
 type tmplVars struct {
 	Version   string

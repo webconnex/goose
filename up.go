@@ -3,7 +3,6 @@ package goose
 import (
 	"database/sql"
 	"fmt"
-	"log"
 )
 
 // UpTo migrates up to a specific version.
