@@ -7,7 +7,7 @@ import (
 
 	"os"
 
-	"github.com/pressly/goose"
+	"github.com/webconnex/goose"
 )
 
 var (
