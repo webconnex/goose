@@ -1,34 +1,48 @@
 package main
 
 import (
-	"database/sql"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 
-	"github.com/webconnex/goose"
-
-	// Init DB drivers.
-	_ "github.com/go-sql-driver/mysql"
-	_ "github.com/lib/pq"
-	_ "github.com/mattn/go-sqlite3"
-	_ "github.com/ziutek/mymysql/godrv"
+	"github.com/pressly/goose"
 )
 
 var (
-	flags = flag.NewFlagSet("goose", flag.ExitOnError)
-	dir   = flags.String("dir", "./migrations/", "directory with migration files")
+	flags   = flag.NewFlagSet("goose", flag.ExitOnError)
+	dir     = flags.String("dir", ".", "directory with migration files")
+	verbose = flags.Bool("v", false, "enable verbose mode")
+	help    = flags.Bool("h", false, "print help")
+	version = flags.Bool("version", false, "print version")
 )
 
 func main() {
 	flags.Usage = usage
 	flags.Parse(os.Args[1:])
 
-	args := flags.Args()
+	if *version {
+		fmt.Println(goose.VERSION)
+		return
+	}
+	if *verbose {
+		goose.SetVerbose(true)
+	}
 
-	if len(args) > 1 && args[0] == "create" {
+	args := flags.Args()
+	if len(args) == 0 || *help {
+		flags.Usage()
+		return
+	}
+
+	switch args[0] {
+	case "create":
 		if err := goose.Run("create", nil, *dir, args[1:]...); err != nil {
+			log.Fatalf("goose run: %v", err)
+		}
+		return
+	case "fix":
+		if err := goose.Run("fix", nil, *dir); err != nil {
 			log.Fatalf("goose run: %v", err)
 		}
 		return
@@ -39,33 +53,9 @@ func main() {
 		return
 	}
 
-	if args[0] == "-h" || args[0] == "--help" {
-		flags.Usage()
-		return
-	}
-
 	driver, dbstring, command := args[0], args[1], args[2]
 
-	switch driver {
-	case "postgres", "mysql", "sqlite3", "redshift":
-		if err := goose.SetDialect(driver); err != nil {
-			log.Fatal(err)
-		}
-	default:
-		log.Fatalf("%q driver not supported\n", driver)
-	}
-
-	switch dbstring {
-	case "":
-		log.Fatalf("-dbstring=%q not supported\n", dbstring)
-	default:
-	}
-
-	if driver == "redshift" {
-		driver = "postgres"
-	}
-
-	db, err := sql.Open(driver, dbstring)
+	db, err := goose.OpenDBWithDriver(driver, normalizeDBString(driver, dbstring))
 	if err != nil {
 		log.Fatalf("-dbstring=%q: %v\n", dbstring, err)
 	}
@@ -81,9 +71,9 @@ func main() {
 }
 
 func usage() {
-	fmt.Print(usagePrefix)
+	fmt.Println(usagePrefix)
 	flags.PrintDefaults()
-	fmt.Print(usageCommands)
+	fmt.Println(usageCommands)
 }
 
 var (
@@ -93,6 +83,7 @@ Drivers:
     postgres
     mysql
     sqlite3
+    mssql
     redshift
 
 Examples:
@@ -103,8 +94,10 @@ Examples:
     goose sqlite3 ./foo.db up
 
     goose postgres "user=postgres dbname=postgres sslmode=disable" status
-    goose mysql "user:password@/dbname" status
+    goose mysql "user:password@/dbname?parseTime=true" status
     goose redshift "postgres://user:password@qwerty.us-east-1.redshift.amazonaws.com:5439/db" status
+    goose tidb "user:password@/dbname?parseTime=true" status
+    goose mssql "sqlserver://user:password@dbname:1433?database=master" status
 
 Options:
 `
@@ -112,6 +105,7 @@ Options:
 	usageCommands = `
 Commands:
     up                   Migrate the DB to the most recent version available
+    up-by-one            Migrate the DB up by 1
     up-to VERSION        Migrate the DB to a specific VERSION
     down                 Roll back the version by 1
     down-to VERSION      Roll back to a specific VERSION
@@ -121,6 +115,7 @@ Commands:
     reset                Roll back all migrations
     status               Dump the migration status for the current DB
     version              Print the current version of the database
-    create NAME [sql|go] Creates new migration file with next version
+    create NAME [sql|go] Creates new migration file with the current timestamp
+    fix                  Apply sequential ordering to migrations
 `
 )

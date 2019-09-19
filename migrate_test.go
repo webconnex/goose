@@ -4,11 +4,8 @@ import (
 	"testing"
 )
 
-func newMigration(v int64, src string) *Migration {
-	return &Migration{Version: v, Previous: -1, Next: -1, Source: src}
-}
-
 func TestMigrationSort(t *testing.T) {
+	t.Parallel()
 
 	ms := Migrations{}
 
@@ -25,8 +22,11 @@ func TestMigrationSort(t *testing.T) {
 	validateMigrationSort(t, ms, sorted)
 }
 
-func validateMigrationSort(t *testing.T, ms Migrations, sorted []int64) {
+func newMigration(v int64, src string) *Migration {
+	return &Migration{Version: v, Previous: -1, Next: -1, Source: src}
+}
 
+func validateMigrationSort(t *testing.T, ms Migrations, sorted []int64) {
 	for i, m := range ms {
 		if sorted[i] != m.Version {
 			t.Error("incorrect sorted version")
