@@ -7,8 +7,6 @@ import (
 	"strings"
 )
 
-const seqVersionTemplate = "%05v"
-
 func Fix(dir string) error {
 	migrations, err := CollectMigrations(dir, minVersion, maxVersion)
 	if err != nil {
@@ -34,12 +32,7 @@ func Fix(dir string) error {
 	// fix filenames by replacing timestamps with sequential versions
 	for _, tsm := range tsMigrations {
 		oldPath := tsm.Source
-		newPath := strings.Replace(
-			oldPath,
-			fmt.Sprintf("%d", tsm.Version),
-			fmt.Sprintf(seqVersionTemplate, version),
-			1,
-		)
+		newPath := strings.Replace(oldPath, fmt.Sprintf("%d", tsm.Version), fmt.Sprintf("%05v", version), 1)
 
 		if err := os.Rename(oldPath, newPath); err != nil {
 			return err
