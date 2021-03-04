@@ -86,7 +86,11 @@ func UpUnapplied(db *sql.DB, dir string) error {
 
 		// Look up if the migration has been applied.
 		var row MigrationRecord
-		q := fmt.Sprintf("SELECT tstamp, is_applied FROM goose_db_version WHERE version_id=%d ORDER BY tstamp DESC LIMIT 1", migration.Version)
+		q := fmt.Sprintf(
+			"SELECT tstamp, is_applied FROM %s WHERE version_id=%d ORDER BY tstamp DESC LIMIT 1",
+			TableName(),
+			migration.Version,
+		)
 		err := db.QueryRow(q).Scan(&row.TStamp, &row.IsApplied)
 
 		if err != nil && err != sql.ErrNoRows {
